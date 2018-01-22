@@ -82,7 +82,6 @@ void *ReadImage(void *threadid) {
 		}
 		std::cout << std::endl << "************************************" << std::endl;
 
-		// writeLicensePlateCharsOnImage(imgOriginalScene, licPlate);             
 
 		//cv::imshow("imgOriginalScene", imgOriginalScene);
 
