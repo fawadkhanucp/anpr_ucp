@@ -5,6 +5,8 @@
 #include<opencv2/core/core.hpp>
 #include<opencv2/highgui/highgui.hpp>
 #include<opencv2/imgproc/imgproc.hpp>
+#include<stdlib.h>
+#include <Windows.h>
 
 using namespace std;
 using namespace cv;
@@ -39,7 +41,7 @@ void *ReadImage(void *threadid) {
 	//cv::imshow("imgOriginalScene", imgOriginalScene);         
 
 	if (vectorOfPossiblePlates.empty()) {
-		std::cout << std::endl << "no license plates were detected" << std::endl;
+		std::cout << std::endl << "No number plates were detected." << std::endl;
 		system("pause");
 	}
 	else {
@@ -48,17 +50,37 @@ void *ReadImage(void *threadid) {
 
 		std::sort(vectorOfPossiblePlates.begin(), vectorOfPossiblePlates.end(), PossiblePlate::sortDescendingByNumberOfChars);
 
+
+
 		PossiblePlate licPlate = vectorOfPossiblePlates.front();
+		PossiblePlate licPlate2 = vectorOfPossiblePlates.back();
+
 
 		if (licPlate.strChars.length() == 0) {
-			std::cout << std::endl << "no characters were detected" << std::endl << std::endl;
+			std::cout << std::endl << "No characters detected." << std::endl << std::endl;
 			return(0);
 		}
 
-		//drawRedRectangleAroundPlate(imgOriginalScene, licPlate);                
+		//drawRedRectangleAroundPlate(imgOriginalScene, licPlate);  
 
-		std::cout << std::endl << "license plate read from image = " << licPlate.strChars << std::endl;
-		std::cout << std::endl << "-----------------------------------------" << std::endl;
+		if (licPlate.strChars[0] >= 'A' && licPlate.strChars[0] <= 'Z')
+		{
+			if (licPlate.strChars == licPlate2.strChars)
+				std::cout << std::endl << "Number Plate = " << licPlate.strChars << std::endl;
+			else
+				std::cout << std::endl << "Number Plate = " << licPlate.strChars << " " << licPlate2.strChars << std::endl;
+
+		}
+
+		else
+		{
+			if (licPlate.strChars == licPlate2.strChars)
+				std::cout << std::endl << "Number Plate = " << licPlate.strChars << std::endl;
+			else
+				std::cout << std::endl << "Number Plate = " << licPlate2.strChars << " " << licPlate.strChars << std::endl;
+
+		}
+		std::cout << std::endl << "************************************" << std::endl;
 
 		// writeLicensePlateCharsOnImage(imgOriginalScene, licPlate);             
 
@@ -155,10 +177,8 @@ void *CameraStream(void *threadid) {
 
 	if (a < 6505.5 && a>5000 && approx.size() == 4) {
 	screenCnt = approx;
-	cout << a << endl;
 
 	drawContours(imgOriginalScene, std::vector<std::vector<cv::Point>>{screenCnt}, 0, Scalar(0, 255, 255), 3);
-	cout << "size arc =    " << arcLength(Mat(contours[i]), true) << endl;
 
 	Mat mask = Mat::zeros(imgOriginalScene.rows, imgOriginalScene.cols, CV_8UC1);
 	r = imgOriginalScene.rows;
@@ -166,7 +186,6 @@ void *CameraStream(void *threadid) {
 
 	Rect re = boundingRect(contours[i]);
 
-	cout << "x " << re.x << "y " << re.x << " hight =    " << re.height << "width =    " << re.width << endl;
 
 
 
@@ -185,7 +204,6 @@ void *CameraStream(void *threadid) {
 	Rect cr = Rect(re.x, re.y, re.width, re.height);
 
 	Rect cr1 = Rect(re.x, re.y / 2, re.width, re.height / 2);
-	cout << " crop x " << cr1.x << " crop y  " << cr1.y << " crop  hight =    " << cr1.height << "width =    " << cr1.width << endl;
 	Mat cuted = crop(cr1);
 	Mat cut = crop(cr);
 
@@ -201,6 +219,7 @@ void *CameraStream(void *threadid) {
 	cvtColor(cut, cut, CV_BGR2GRAY);
 	imshow("gray number plate window", cut);
 	imwrite("NP.jpg", cut);
+	Sleep(500);
 	int rc = pthread_create(&thread, NULL, ReadImage, (void *)1);
 
 
@@ -269,32 +288,5 @@ void drawRedRectangleAroundPlate(cv::Mat &imgOriginalScene, PossiblePlate &licPl
 }
 
 
-void writeLicensePlateCharsOnImage(cv::Mat &imgOriginalScene, PossiblePlate &licPlate) {
-    cv::Point ptCenterOfTextArea;                   
-    cv::Point ptLowerLeftTextOrigin;               
-
-    int intFontFace = CV_FONT_HERSHEY_SIMPLEX;                              
-    double dblFontScale = (double)licPlate.imgPlate.rows / 30.0;            
-    int intFontThickness = (int)round(dblFontScale * 1.5);            
-    int intBaseline = 0;
-
-    cv::Size textSize = cv::getTextSize(licPlate.strChars, intFontFace, dblFontScale, intFontThickness, &intBaseline);    
-
-    ptCenterOfTextArea.x = (int)licPlate.rrLocationOfPlateInScene.center.x;         
-
-    if (licPlate.rrLocationOfPlateInScene.center.y < (imgOriginalScene.rows * 0.75)) {      
-                                                                                           
-        ptCenterOfTextArea.y = (int)std::round(licPlate.rrLocationOfPlateInScene.center.y) + (int)std::round((double)licPlate.imgPlate.rows * 1.6);
-    }
-    else {                                                                                
-        ptCenterOfTextArea.y = (int)std::round(licPlate.rrLocationOfPlateInScene.center.y) - (int)std::round((double)licPlate.imgPlate.rows * 1.6);
-    }
-
-    ptLowerLeftTextOrigin.x = (int)(ptCenterOfTextArea.x - (textSize.width / 2));           
-    ptLowerLeftTextOrigin.y = (int)(ptCenterOfTextArea.y + (textSize.height / 2));          
-
-                                                                                          
-    cv::putText(imgOriginalScene, licPlate.strChars, ptLowerLeftTextOrigin, intFontFace, dblFontScale, SCALAR_YELLOW, intFontThickness);
-}
 
 
